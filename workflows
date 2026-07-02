@@ -1,1 +1,74 @@
+# ============================================================
+#  APK'YI GITHUB DERLESİN — ANDROID STUDIO GEREKMEZ
+#  (Tamamı telefondan bile yapılabilir, ücretsizdir)
+#
+#  1) github.com → ücretsiz hesap aç
+#  2) Sağ üstteki ＋ → "New repository" → bir isim ver
+#     ("Add a README file" kutusunu işaretle) → Create
+#  3) Repoda "Add file → Upload files" → daha önce indirdiğin
+#     BasitVideoEditor.zip dosyasını yükle → Commit changes
+#  4) "Add file → Create new file" → dosya adına AYNEN şunu yaz:
+#        .github/workflows/derle.yml
+#     ve bu dosyanın İÇERİĞİNİN TAMAMINI yapıştır → Commit changes
+#  5) Üstteki "Actions" sekmesine gir → çalışan "APK Derle" işine
+#     tıkla → 5-10 dk bekle (yeşil tik ✅ görünecek)
+#  6) APK'yı indir:
+#     - Aynı sayfanın altındaki "Artifacts" bölümünden, veya
+#     - Repo ana sayfası → sağdaki "Releases" → en üstteki sürümdeki
+#       app-debug.apk dosyasına dokun
+#  7) Telefonda APK'ya dokun → "Bilinmeyen kaynaklara izin ver" →
+#     Yükle. Bitti! 🎉
+#
+#  Kodu değiştirmek istersen: zip'i bilgisayarında/telefonunda
+#  düzenleyip aynı adla tekrar yükle → derleme otomatik yeniden çalışır.
+# ============================================================
 
+name: APK Derle
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Proje zip dosyasini ac
+        run: unzip -o BasitVideoEditor.zip
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK kur
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle kur
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: APK derle
+        working-directory: BasitVideoEditor
+        run: gradle assembleDebug
+
+      - name: APK dosyasini Artifacts bolumune yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: BasitVideoEditor-APK
+          path: BasitVideoEditor/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: APK ile Release olustur
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: derleme-${{ github.run_number }}
+          name: APK derleme ${{ github.run_number }}
+          files: BasitVideoEditor/app/build/outputs/apk/debug/app-debug.apk
